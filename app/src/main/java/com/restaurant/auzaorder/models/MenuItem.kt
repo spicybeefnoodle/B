@@ -1,8 +1,10 @@
 package com.restaurant.auzaorder.models
 
 data class MenuItem(
-    val name: String? = null,
-    val description: String? = null,
-    val price: Double? = null,
-    val imageUrl: String? = null
+    val id: String = "", //Provide default values
+    val name: String = "",
+    val description: String = "",
+    val price: Double = 0.0,
+    val imageUrl: String? = null,
+    val category: String = "" // Add category if not already present
 )
