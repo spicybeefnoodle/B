@@ -1,8 +1,6 @@
 package com.restaurant.auzaorder.models
 
 data class Table(
-    val status: String? = null,
-    val orders: List<Order>? = null,
-    val requests: List<String>? = null,
-    val lastUpdate: Long? = null
+    val id: Int = -1,
+    var status: String = "Available" // "Available", "Ordering", "Waiting", etc.
 )

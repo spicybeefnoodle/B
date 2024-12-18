@@ -2,7 +2,7 @@ package com.restaurant.auzaorder.models
 
 data class Order(
     val items: List<OrderItem> = emptyList(),
-    val tableId: Int, // Use Int for tableId if that's how you identify tables
+    val tableId: Int = -1,
     val timestamp: Long = System.currentTimeMillis(),
-    val status : String = ""
+    var status: String = ""
 )

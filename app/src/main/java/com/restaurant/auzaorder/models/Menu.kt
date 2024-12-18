@@ -1,5 +1,5 @@
 package com.restaurant.auzaorder.models
 
 data class Menu(
-    val categories: Map<String, MenuCategory>? = null
+    val categories: List<MenuCategory> = emptyList() // See MenuCategory below
 )
