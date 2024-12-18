@@ -17,9 +17,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController // Import NavHostController
 import com.restaurant.auzaorder.viewmodels.DashboardViewModel
 import kotlinx.coroutines.launch
+import kotlin.properties.ReadOnlyProperty
+import androidx.compose.runtime.getValue
 
 // DataStore declaration (extension property for Context)
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -27,7 +30,10 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(dashboardViewModel: DashboardViewModel = viewModel()) {
+fun DashboardScreen(
+    navController: NavHostController, // Add NavHostController parameter
+    dashboardViewModel: DashboardViewModel = hiltViewModel()
+) {
     val restaurantId = "restaurantID_1" // Replace with dynamic restaurantId later
     val tableIdState = remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
@@ -50,7 +56,10 @@ fun DashboardScreen(dashboardViewModel: DashboardViewModel = viewModel()) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Dashboard - $restaurantId")
+        dashboardViewModel.restaurantState.value?.config?.name?.let {
+            Text(text = "Dashboard - $it")
+        }?:  Text(text = "Dashboard - Loading...") //Added null check for text and loading state
+
         Text(text = "Current Table ID: ${tableIdState.value}")
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -71,6 +80,9 @@ fun DashboardScreen(dashboardViewModel: DashboardViewModel = viewModel()) {
                         preferences[tableIdKey] = inputTableId
                         tableIdState.value = inputTableId
                     }
+                    dashboardViewModel.restaurantState.value?.let { restaurant ->
+                        dashboardViewModel.addTable(restaurantId,inputTableId)
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -79,12 +91,22 @@ fun DashboardScreen(dashboardViewModel: DashboardViewModel = viewModel()) {
         }
 
         // Display restaurant tables
-        dashboardViewModel.restaurantState.value?.let { restaurant ->
-            if (restaurant.tables.isNullOrEmpty()) {
-                Text("No tables available")
-            } else {
-                Text("Tables: ${restaurant.tables.keys.joinToString()}")
+        if (dashboardViewModel.restaurantState.value?.tables.isNullOrEmpty()) {
+            Text("No tables available")
+        } else{
+            dashboardViewModel.restaurantState.value?.tables?.let {
+                Text("Tables: ${it.keys.joinToString()}")
             }
+
+        }
+        // Added the Button to navigate to the menu
+        Button(
+            onClick = {
+                navController.navigate("menu") // Navigate to the menu screen
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("View Menu")
         }
     }
 

@@ -15,7 +15,9 @@ import androidx.navigation.compose.rememberNavController
 import com.restaurant.auzaorder.ui.theme.AuzaOrderTheme
 import com.restaurant.auzaorder.ui.LoginScreen
 import com.restaurant.auzaorder.ui.DashboardScreen
+import com.restaurant.auzaorder.ui.MenuScreen
 import dagger.hilt.android.AndroidEntryPoint
+
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -42,7 +44,10 @@ fun Navigation() {
             LoginScreen(navController = navController)
         }
         composable("dashboard") {
-            DashboardScreen()
+            DashboardScreen(navController = navController)
+        }
+        composable("menu") {
+            MenuScreen()
         }
     }
 }

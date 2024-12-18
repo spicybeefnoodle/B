@@ -9,15 +9,18 @@ androidx-navigation = "2.7.7"
 compose-bom = "2024.02.01"
 firebase-bom = "32.7.3"
 gradle = "8.2.2"
+hilt-navigation-compose = "1.2.0"
 kotlin = "1.9.22"
 google-services = "4.4.1"
 androidx-datastore = "1.0.0"
 hilt = "2.51"
+hilt-navigation = "1.2.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso" }
+androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hilt-navigation-compose" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-junit" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidx-lifecycle" }
 androidx-material3 = { module = "androidx.compose.material3:material3", version.ref = "androidx-material3" }
@@ -33,6 +36,7 @@ junit = { module = "junit:junit", version = "4.13.2" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref= "hilt-navigation"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "gradle" }
