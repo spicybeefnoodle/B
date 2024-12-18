@@ -3,7 +3,7 @@ package com.restaurant.auzaorder
 import android.app.Application
 import com.google.firebase.FirebaseApp
 
-class MyApplication : Application() {
+class App : Application() {
     override fun onCreate() {
         super.onCreate()
         FirebaseApp.initializeApp(this)
