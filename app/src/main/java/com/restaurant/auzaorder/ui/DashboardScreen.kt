@@ -44,13 +44,19 @@ fun DashboardScreen(restaurantId: String = "restaurantID_1") {
         Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn {
-            items(tables.entries.toList()) { (tableId, tableData) ->
-                Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        Text("Table: $tableId", style = MaterialTheme.typography.titleMedium)
-                        Text("Status: ${tableData.status}")
-                        Text("Orders: ${tableData.orders.size}")
-                        Text("Requests: ${tableData.requests.joinToString()}")
+            if (tables.isEmpty()) {
+                item {
+                    Text("No tables available", style = MaterialTheme.typography.bodyMedium)
+                }
+            } else {
+                items(tables.entries.toList()) { (tableId, tableData) ->
+                    Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            Text("Table: $tableId", style = MaterialTheme.typography.titleMedium)
+                            Text("Status: ${tableData.status}")
+                            Text("Orders: ${tableData.orders.size}")
+                            Text("Requests: ${tableData.requests.joinToString()}")
+                        }
                     }
                 }
             }

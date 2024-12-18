@@ -1,5 +1,6 @@
 package com.restaurant.auzaorder.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -43,6 +44,8 @@ fun CustomerScreen(
 
         if (message.isNotEmpty()) {
             Text(message)
+        } else {
+            Log.e("ERROR", "FUCK BRO $message")
         }
     }
 }
