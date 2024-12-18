@@ -11,17 +11,17 @@ import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.launch
+import androidx.datastore.preferences.core.edit
+
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val restaurantRepository: RestaurantRepository,
-    private val dataStore: DataStore<Preferences>,
+    private val dataStore: DataStore<Preferences>
 ): ViewModel() {
     var restaurantState = mutableStateOf<Restaurant?>(null)
-
     private val tableIdKey = stringPreferencesKey("table_id")
 
     fun fetchRestaurant(restaurantId: String){
@@ -30,8 +30,13 @@ class DashboardViewModel @Inject constructor(
         }.launchIn(viewModelScope)
     }
 
-    fun addTable(restaurantId: String, tableId: String){
-        restaurantRepository.addTable(restaurantId, tableId)
-    }
 
+    fun addTable(restaurantId: String, tableId: String) {
+        viewModelScope.launch {
+            restaurantRepository.addTable(restaurantId, tableId)
+            dataStore.edit { preferences ->
+                preferences[tableIdKey] = tableId
+            }
+        }
+    }
 }

@@ -44,7 +44,7 @@ fun Navigation() {
             LoginScreen(navController = navController)
         }
         composable("dashboard") {
-            DashboardScreen(navController = navController)
+            DashboardScreen(navController = navController) // Pass navController
         }
         composable("menu") {
             MenuScreen()

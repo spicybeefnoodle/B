@@ -14,11 +14,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController // Import NavHostController
+import androidx.navigation.NavHostController
 import com.restaurant.auzaorder.viewmodels.DashboardViewModel
 import kotlinx.coroutines.launch
 import kotlin.properties.ReadOnlyProperty
@@ -31,7 +30,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    navController: NavHostController, // Add NavHostController parameter
+    navController: NavHostController,
     dashboardViewModel: DashboardViewModel = hiltViewModel()
 ) {
     val restaurantId = "restaurantID_1" // Replace with dynamic restaurantId later
@@ -58,7 +57,7 @@ fun DashboardScreen(
     ) {
         dashboardViewModel.restaurantState.value?.config?.name?.let {
             Text(text = "Dashboard - $it")
-        }?:  Text(text = "Dashboard - Loading...") //Added null check for text and loading state
+        }?:  Text(text = "Dashboard - Loading...")
 
         Text(text = "Current Table ID: ${tableIdState.value}")
 
@@ -75,15 +74,7 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
-                scope.launch {
-                    dataStore.edit { preferences ->
-                        preferences[tableIdKey] = inputTableId
-                        tableIdState.value = inputTableId
-                    }
-                    dashboardViewModel.restaurantState.value?.let { restaurant ->
-                        dashboardViewModel.addTable(restaurantId,inputTableId)
-                    }
-                }
+                dashboardViewModel.addTable(restaurantId, inputTableId)
             },
             modifier = Modifier.fillMaxWidth()
         ) {

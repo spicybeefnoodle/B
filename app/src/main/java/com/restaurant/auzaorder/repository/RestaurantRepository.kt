@@ -30,4 +30,10 @@ class RestaurantRepository @Inject constructor() {
         restaurantRef.addValueEventListener(listener)
         awaitClose { restaurantRef.removeEventListener(listener) }
     }
+
+    fun addTable(restaurantId: String, tableId: String) {
+        val tableRef = restaurantsRef.child(restaurantId).child("tables").child(tableId)
+        tableRef.setValue(mapOf("status" to "waiting"))
+    }
+
 }
