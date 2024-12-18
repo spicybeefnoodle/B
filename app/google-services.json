@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "535867978294",
+    "project_id": "auza-order",
+    "storage_bucket": "auza-order.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:535867978294:android:608bde852355fc01809e97",
+        "android_client_info": {
+          "package_name": "com.restaurant.auzaorder"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcdXWnkWljgkyKzB3_PUZEm4KzN0vWZnU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
