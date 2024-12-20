@@ -31,20 +31,17 @@ fun MenuScreen(
     val restaurant by dashboardViewModel.restaurantState.collectAsState()
     val menuCategories = remember { mutableStateOf<List<MenuCategory>>(emptyList()) }
     val order by orderViewModel.currentOrder.collectAsState()
+    var itemQuantities by remember { mutableStateOf(mutableMapOf<String, Int>()) }
 
-
-    // Add this LaunchedEffect
     LaunchedEffect(Unit) {
         dashboardViewModel.fetchRestaurant("restaurant_1")
     }
 
-    // Update menu categories when restaurant data changes
     LaunchedEffect(restaurant) {
         menuCategories.value = restaurant?.menu?.categories ?: emptyList()
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Title bar
         TopAppBar(
             title = { Text(text = restaurant?.config?.name ?: "Menu") },
             colors = TopAppBarDefaults.topAppBarColors(
@@ -53,7 +50,6 @@ fun MenuScreen(
             )
         )
 
-        // Menu content
         if (menuCategories.value.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -72,31 +68,50 @@ fun MenuScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .weight(1f)
                     .padding(horizontal = 16.dp)
             ) {
                 menuCategories.value.forEach { category ->
-                    item {
+                    item(key = "header_${category.name}") {
                         CategoryHeader(category.name)
                     }
 
-                    items(category.items.values.toList()) { menuItem ->
-                        MenuItemCard(menuItem)
+                    items(
+                        items = category.items.values.toList(),
+                        key = { menuItem -> menuItem.id }
+                    ) { menuItem ->
+                        MenuItemCard(
+                            item = menuItem,
+                            quantity = itemQuantities[menuItem.id] ?: 0,
+                            onQuantityChange = { newQuantity ->
+                                itemQuantities = itemQuantities.toMutableMap().apply {
+                                    this[menuItem.id] = newQuantity
+                                }
+                            },
+                            onAddToOrder = {
+                                val currentQuantity = itemQuantities[menuItem.id] ?: 0
+                                if (currentQuantity > 0) {
+                                    orderViewModel.addItem(OrderItem(menuItem, currentQuantity))
+                                    itemQuantities = itemQuantities.toMutableMap().apply {
+                                        remove(menuItem.id)
+                                    }
+                                }
+                            }
+                        )
                     }
 
-                    item {
+                    item(key = "spacer_${category.name}") {
                         Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
         }
 
-        // Bottom bar for placing the order
         if (order.items.isNotEmpty()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Button(
                     onClick = {
-                        // Assuming you have the restaurantId available here
-                        orderViewModel.placeOrder(restaurantId = "restaurant_1") // Replace "restaurant_1" with the actual restaurant ID
+                        orderViewModel.placeOrder(restaurantId = "restaurant_1")
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -119,24 +134,24 @@ private fun CategoryHeader(categoryName: String) {
 }
 
 @Composable
-private fun MenuItemCard(item: MenuItem, orderViewModel: OrderViewModel = hiltViewModel()) {
+private fun MenuItemCard(
+    item: MenuItem,
+    quantity: Int,
+    onQuantityChange: (Int) -> Unit,
+    onAddToOrder: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .padding(12.dp)
                 .fillMaxWidth()
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Item image
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(item.imageUrl)
@@ -150,10 +165,7 @@ private fun MenuItemCard(item: MenuItem, orderViewModel: OrderViewModel = hiltVi
 
                 Spacer(Modifier.width(16.dp))
 
-                // Item details
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = item.name,
                         style = MaterialTheme.typography.titleMedium
@@ -174,9 +186,6 @@ private fun MenuItemCard(item: MenuItem, orderViewModel: OrderViewModel = hiltVi
                 }
             }
 
-            // Quantity Selection and Add to Order Button
-            var quantity by remember { mutableStateOf(0) }
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -185,16 +194,19 @@ private fun MenuItemCard(item: MenuItem, orderViewModel: OrderViewModel = hiltVi
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { quantity = maxOf(0, quantity - 1) },
+                    onClick = { onQuantityChange(maxOf(0, quantity - 1)) },
                     enabled = quantity > 0
                 ) {
                     Icon(Icons.Filled.Remove, contentDescription = "Decrease")
                 }
 
-                Text(text = "$quantity", modifier = Modifier.padding(horizontal = 12.dp))
+                Text(
+                    text = "$quantity",
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
 
                 IconButton(
-                    onClick = { quantity++ }
+                    onClick = { onQuantityChange(quantity + 1) }
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = "Increase")
                 }
@@ -202,14 +214,9 @@ private fun MenuItemCard(item: MenuItem, orderViewModel: OrderViewModel = hiltVi
                 Spacer(Modifier.width(16.dp))
 
                 Button(
-                    onClick = {
-                        if (quantity > 0) {
-                            orderViewModel.addItem(OrderItem(item, quantity))
-                            quantity = 0 // Reset quantity after adding
-                        }
-                    },
+                    onClick = onAddToOrder,
                     enabled = quantity > 0,
-                    modifier = Modifier.weight(1f) // Button occupies remaining space
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text("Add to Order")
                 }

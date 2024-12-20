@@ -33,12 +33,15 @@ fun DashboardScreen(
     navController: NavHostController,
     dashboardViewModel: DashboardViewModel = hiltViewModel()
 ) {
-    val restaurantId = "restaurantID_1" // Replace with dynamic restaurantId later
+    val restaurantId = "restaurant_1" // Replace with dynamic restaurantId later
     val tableIdState = remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val dataStore = context.dataStore // Access DataStore using the extension property
     val tableIdKey = stringPreferencesKey("table_id")
+
+    // Collect restaurantState as State
+    val restaurantState by dashboardViewModel.restaurantState.collectAsState()
 
     // Read tableId from DataStore
     LaunchedEffect(Unit) {
@@ -55,9 +58,9 @@ fun DashboardScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        dashboardViewModel.restaurantState.value?.config?.name?.let {
+        restaurantState?.config?.name?.let {
             Text(text = "Dashboard - $it")
-        }?:  Text(text = "Dashboard - Loading...")
+        } ?: Text(text = "Dashboard - Loading...")
 
         Text(text = "Current Table ID: ${tableIdState.value}")
 
@@ -81,15 +84,15 @@ fun DashboardScreen(
             Text("Save Table ID")
         }
 
-        // Display restaurant tables
-        if (dashboardViewModel.restaurantState.value?.tables.isNullOrEmpty()) {
+        // Display restaurant tables using the collected state
+        if (restaurantState?.tables.isNullOrEmpty()) {
             Text("No tables available")
-        } else{
-            dashboardViewModel.restaurantState.value?.tables?.let {
+        } else {
+            restaurantState?.tables?.let {
                 Text("Tables: ${it.keys.joinToString()}")
             }
-
         }
+
         // Added the Button to navigate to the menu
         Button(
             onClick = {

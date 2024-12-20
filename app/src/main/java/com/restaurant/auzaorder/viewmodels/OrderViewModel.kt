@@ -24,6 +24,10 @@ class OrderViewModel @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) : ViewModel() {
 
+    // Add this new state
+    private val _itemQuantities = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val itemQuantities: StateFlow<Map<String, Int>> = _itemQuantities.asStateFlow()
+
     private val _currentOrder = MutableStateFlow<Order>(Order(tableId = -1)) // Initialize with an empty order
     val currentOrder: StateFlow<Order> = _currentOrder.asStateFlow()
 
@@ -50,6 +54,17 @@ class OrderViewModel @Inject constructor(
             }
         }
         _currentOrder.value = _currentOrder.value.copy(items = updatedItems)
+    }
+
+    // Add these functions to manage quantities
+    fun updateQuantity(itemId: String, quantity: Int) {
+        _itemQuantities.value = _itemQuantities.value.toMutableMap().apply {
+            this[itemId] = quantity
+        }
+    }
+
+    fun getQuantity(itemId: String): Int {
+        return _itemQuantities.value[itemId] ?: 0
     }
 
     fun placeOrder(restaurantId: String) {
