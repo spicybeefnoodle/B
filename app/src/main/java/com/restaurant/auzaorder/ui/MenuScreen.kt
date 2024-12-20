@@ -1,17 +1,23 @@
 package com.restaurant.auzaorder.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -31,7 +37,9 @@ fun MenuScreen(
     val restaurant by dashboardViewModel.restaurantState.collectAsState()
     val menuCategories = remember { mutableStateOf<List<MenuCategory>>(emptyList()) }
     val order by orderViewModel.currentOrder.collectAsState()
-    var itemQuantities by remember { mutableStateOf(mutableMapOf<String, Int>()) }
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var showCart by remember { mutableStateOf(false) }
+    var showOrderHistory by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         dashboardViewModel.fetchRestaurant("restaurant_1")
@@ -39,83 +47,212 @@ fun MenuScreen(
 
     LaunchedEffect(restaurant) {
         menuCategories.value = restaurant?.menu?.categories ?: emptyList()
+        if (selectedCategory == null && menuCategories.value.isNotEmpty()) {
+            selectedCategory = menuCategories.value.first().name
+        }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(text = restaurant?.config?.name ?: "Menu") },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = restaurant?.config?.name ?: "Menu") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
             )
-        )
-
-        if (menuCategories.value.isEmpty()) {
+        }
+    ) { paddingValues ->
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Left Column - Categories
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier
+                    .width(120.dp)
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 80.dp)
                 ) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(16.dp))
-                    Text("Loading Menu...")
+                    items(menuCategories.value) { category ->
+                        CategoryItem(
+                            category = category,
+                            isSelected = category.name == selectedCategory,
+                            onClick = { selectedCategory = category.name }
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(8.dp)
+                ) {
+                    Button(
+                        onClick = { /* TODO: Implement call staff functionality */ },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.tertiary
+                        )
+                    ) {
+                        Text("Call Staff")
+                    }
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-                    .padding(horizontal = 16.dp)
-            ) {
-                menuCategories.value.forEach { category ->
-                    item(key = "header_${category.name}") {
-                        CategoryHeader(category.name)
-                    }
 
-                    items(
-                        items = category.items.values.toList(),
-                        key = { menuItem -> menuItem.id }
-                    ) { menuItem ->
-                        MenuItemCard(
-                            item = menuItem,
-                            quantity = itemQuantities[menuItem.id] ?: 0,
-                            onQuantityChange = { newQuantity ->
-                                itemQuantities = itemQuantities.toMutableMap().apply {
-                                    this[menuItem.id] = newQuantity
-                                }
-                            },
-                            onAddToOrder = {
-                                val currentQuantity = itemQuantities[menuItem.id] ?: 0
-                                if (currentQuantity > 0) {
-                                    orderViewModel.addItem(OrderItem(menuItem, currentQuantity))
-                                    itemQuantities = itemQuantities.toMutableMap().apply {
-                                        remove(menuItem.id)
+            // Right Column - Menu Items
+            Box(
+                modifier = Modifier
+                    .weight(3f)
+                    .fillMaxHeight()
+            ) {
+                val currentCategory = menuCategories.value.find { it.name == selectedCategory }
+                if (currentCategory != null) {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 180.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(bottom = 80.dp)    // For bottom bar
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp)  // Single padding definition
+                    ) {
+                        val menuItems = currentCategory.items.values.toList()
+                        items(menuItems.size) { index ->
+                            val menuItem = menuItems[index]
+                            var showDetails by remember { mutableStateOf(false) }
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(220.dp),  // Reduced from 280.dp
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .fillMaxHeight(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Clickable area for details (image and text)
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { showDetails = true },
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center  // Center content vertically
+                                    ) {
+                                        AsyncImage(
+                                            model = ImageRequest.Builder(LocalContext.current)
+                                                .data(menuItem.imageUrl)
+                                                .placeholder(R.drawable.ramen2)
+                                                .error(R.drawable.ramen2)
+                                                .crossfade(true)
+                                                .build(),
+                                            contentDescription = menuItem.name,
+                                            modifier = Modifier
+                                                .size(120.dp)
+                                                .padding(4.dp)
+                                        )
+
+                                        Text(
+                                            text = menuItem.name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            textAlign = TextAlign.Center,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.padding(vertical = 4.dp)
+                                        )
+
+                                        Text(
+                                            text = "${menuItem.price}",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+
+                                    // Non-clickable area (Add to Cart button)
+                                    Button(
+                                        onClick = { orderViewModel.addItem(OrderItem(menuItem, 1)) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentPadding = PaddingValues(vertical = 4.dp)
+                                    ) {
+                                        Text("Add to Cart", style = MaterialTheme.typography.bodyMedium)
                                     }
                                 }
                             }
-                        )
-                    }
 
-                    item(key = "spacer_${category.name}") {
-                        Spacer(modifier = Modifier.height(24.dp))
+                            if (showDetails) {
+                                ItemDetailModal(
+                                    menuItem = menuItem,
+                                    onDismiss = { showDetails = false },
+                                    onAddToCart = { orderViewModel.addItem(OrderItem(menuItem, 1)) }
+                                )
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        if (order.items.isNotEmpty()) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Button(
-                    onClick = {
-                        orderViewModel.placeOrder(restaurantId = "restaurant_1")
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                // Bottom Navigation Bar
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(80.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 8.dp
                 ) {
-                    Text("Place Order")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = { showOrderHistory = true },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Order History")
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Button(
+                            onClick = { showCart = true },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Cart")
+                                if (order.items.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Surface(
+                                        shape = MaterialTheme.shapes.extraLarge,
+                                        color = MaterialTheme.colorScheme.primary
+                                    ) {
+                                        Text(
+                                            text = order.items.sumOf { it.quantity }.toString(),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -123,103 +260,115 @@ fun MenuScreen(
 }
 
 @Composable
-private fun CategoryHeader(categoryName: String) {
-    Text(
-        text = categoryName,
-        style = MaterialTheme.typography.headlineSmall,
+fun CategoryItem(
+    category: MenuCategory,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
         modifier = Modifier
-            .padding(vertical = 16.dp)
             .fillMaxWidth()
-    )
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = 16.dp, horizontal = 8.dp)
+    ) {
+        Text(
+            text = category.name,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isSelected)
+                MaterialTheme.colorScheme.onPrimaryContainer
+            else
+                MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
 
 @Composable
-private fun MenuItemCard(
-    item: MenuItem,
-    quantity: Int,
-    onQuantityChange: (Int) -> Unit,
-    onAddToOrder: () -> Unit
+fun ItemDetailModal(
+    menuItem: MenuItem,
+    onDismiss: () -> Unit,
+    onAddToCart: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
             modifier = Modifier
-                .padding(12.dp)
                 .fillMaxWidth()
+                .wrapContentHeight(),
+            shape = MaterialTheme.shapes.medium,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.TopEnd
+                ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(item.imageUrl)
+                        .data(menuItem.imageUrl)
                         .placeholder(R.drawable.ramen2)
                         .error(R.drawable.ramen2)
                         .crossfade(true)
                         .build(),
-                    contentDescription = item.name,
-                    modifier = Modifier.size(80.dp)
+                    contentDescription = menuItem.name,
+                    modifier = Modifier
+                        .size(200.dp)
+                        .padding(8.dp)
                 )
 
-                Spacer(Modifier.width(16.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    if (item.description.isNotEmpty()) {
-                        Text(
-                            text = item.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "$${item.price}",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = { onQuantityChange(maxOf(0, quantity - 1)) },
-                    enabled = quantity > 0
-                ) {
-                    Icon(Icons.Filled.Remove, contentDescription = "Decrease")
-                }
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "$quantity",
-                    modifier = Modifier.padding(horizontal = 12.dp)
+                    text = menuItem.name,
+                    style = MaterialTheme.typography.headlineMedium,
+                    textAlign = TextAlign.Center
                 )
 
-                IconButton(
-                    onClick = { onQuantityChange(quantity + 1) }
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Increase")
-                }
+                Text(
+                    text = "${menuItem.price}",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
 
-                Spacer(Modifier.width(16.dp))
+                Text(
+                    text = menuItem.description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
-                    onClick = onAddToOrder,
-                    enabled = quantity > 0,
-                    modifier = Modifier.weight(1f)
+                    onClick = {
+                        onAddToCart()
+                        onDismiss()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp)
                 ) {
-                    Text("Add to Order")
+                    Text("Add to Cart")
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
